@@ -42,12 +42,69 @@ class ConsultaMedicaController extends Controller
             return view('consulta.consulta_medica.index',["signos"=>$signos,"sintomas"=>$sintomas,"enfermedad"=>$enfermedad]);
         } 
 
-        public function getEnfermedad($id) {
-            $sint_enf = DB::table("sint_enf")->where("idsintomas",$id)->pluck("nombre_sintomas","idsintomas");
-            return json_encode($sint_enf);
-        }
-       
+    public function getEnfermedad($id) {
+        $paciente = explode(",", $id);
 
+        $enf=DB::table('enfermedad')->get();
+        $sin=DB::table('sintomas')->get();
+        $SxE=DB::table('sintomas as s') 
+            ->join('sint_enf as SxE','SxE.idsintomas','=','s.idsintomas')
+            ->join('enfermedad as e','e.idenfermedad','=','SxE.idenfermedad')
+            ->get();
+        $dataset = $this->crearDataset($enf, $sin, $SxE);
+        $diagnostico = $this->diagnosticar($paciente, $dataset, $enf);
+        echo json_encode($diagnostico);
+    }
+
+    /* Crear Matriz de  enfermedades (filas) x sintomas (columnas), donde los valores 0 ausencia del sintoma y 1 presencia del sintoma
+        Entrada: enfermedades, sintomas y sintomas_enfermedades (Son datos consultados directamente desde la Base de Datos)
+        Salida: Matriz ExS (enfermedades x Sintomas)
+    */
+    private function crearDataset($enf, $sin, $SxE){
+        $dataset = [];
+        for($i=0 ; $i < $enf->count(); $i++){
+            $dataset[$i] = array('id' => $enf[$i]->idenfermedad, 'fila' => []);
+            for($j=0 ; $j < count($sin); $j++){
+                $dataset[$i]["fila"][$j] = array('id' => $sin[$j]->idsintomas, 'valor' => 
+                    $SxE->where('idsintomas', $sin[$j]->idsintomas)->where('idenfermedad', $enf[$i]->idenfermedad)->isEmpty() ? 0:1);
+            }
+        }//echo json_encode($dataset). "</br>"; // TEST
+        return $dataset;
+    }
+
+
+    /* Realizar calculo de probabilidades básica, para el pronostico sencillo de las enfermedades deacuerdo a los sintomas presentados por el paciente
+        Entrada: Vector de las id de los sintomas (Desde la cadena de consulta del URL), el dataset generado por la función crearDataset() y las enfermedades (sacados desde la Base de datos)
+        Salida: Vector de probabilidad (con las llaves idenfermedad, enfermedad y probabilidad)
+    */
+    private function diagnosticar($paciente, $dataset, $enf){
+        //casos favorables y posibles
+        $casos=[];
+        //vector de probabilidad
+        $probabilidad=[];
+
+        //Recorrer las filas del dataset
+        for($i=0; $i < count($dataset); $i++){
+            $casos[$i] = array('id' => $dataset[$i]["id"], 'posible' => 0 , 'favorable' => 0);
+
+            for($j=0; $j < count($dataset[$i]["fila"]); $j++){
+            //Si la enfermedad se le ha registrado dicho sintoma
+                if($dataset[$i]["fila"][$j]["valor"]==1){
+                    $casos[$i]["posible"]++;
+                    // Si el paciente tiene dicho sintoma 
+                    if(in_array(strval($dataset[$i]["fila"][$j]["id"]), $paciente)){
+                        $casos[$i]["favorable"]++;
+                    }
+                }
+            }
+            //Calcular las probabilidades. La formula de la probabilidad es: casos favorables / casos posibles
+            $aux = $casos[$i]["posible"]!=0 ? round( $casos[$i]["favorable"] / $casos[$i]["posible"],4): 0;
+            $probabilidad[$i]= array('idenfermedad'=> $enf[$i]->idenfermedad, "enfermedad" => $enf[$i]->enfermedad, "probabilidad" => $aux * 100);
+        }//echo json_encode($casos) . "</br>"; // TEST
+        return $probabilidad;
+    }
+
+       
    /* public function index(Request $request){    
     	if($request){  
     		$query=trim($request->get('searchText')); 

@@ -135,7 +135,7 @@ if ($options['register'] ?? true) {
 
 
    
-    Route::get('consulta_medica/getenfermedad/{id}','ConsultaMedicaController@getEnfermedad');
+    Route::get('consulta/consulta_medica/getenfermedad/{id}','ConsultaMedicaController@getEnfermedad');
 
 
     

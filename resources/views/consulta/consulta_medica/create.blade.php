@@ -129,21 +129,21 @@ IMC: {{$sig->IMC}}
 
  
 
-    /*jQuery(document).ready(function (){
+    jQuery(document).ready(function (){
         jQuery('select[name="idsintomas"]').on('change',function(){
             var sintomasID = jQuery(this).val();
 
                 if(sintomasID){
                     jQuery.ajax({
-                        url : 'consulta/consulta_medica/getenfermedad/' +sintomasID,
+                        url : 'consulta_medica/getenfermedad/' +sintomasID,
                         type : "GET",
                         dataType : "json",
                         success:function(data){
                             console.log(data);
                             jQuery('select[name="idenfermedadd"]').empty();
                             jQuery.each(data, function(key,value){
-                                alert(value);
-                                $('select[name="idenfermedadd"]').append('<option value="'+ key +'">'+ value +'</option>');
+                                // alert(value);
+                                // $('select[name="idenfermedadd"]').append('<option value="'+ key +'">'+ value +'</option>');
                             });
                         }
                     });
@@ -152,7 +152,7 @@ IMC: {{$sig->IMC}}
                     $('select[name="idenfermedad"]').empty();
                 }
         });
-    });*/
+    });
 
     
 

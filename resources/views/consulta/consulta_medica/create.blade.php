@@ -1,5 +1,5 @@
 @foreach($signos as $sig) 
-    <div data-backdrop="static" class="modal" id="modal-consulta-medica-{{$sig->idpaciente}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style="overflow-y: scroll;">
+    <div data-backdrop="static" class="modal" id="modal-consulta-medica-{{$sig->idpaciente}}" identificador="{{ $sig->idsignos_vitales }}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style="overflow-y: scroll;">
         <div class="modal-dialog modal-lg" role="document" >
             <div class="modal-content"> 
                 <div style="background-image: url({{asset ('img/100.jpg')}});" class="modal-header">
@@ -53,7 +53,7 @@ IMC: {{$sig->IMC}}
                                         <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-md-12">
                                             <div class="form-group">
                                                 <label for="idsintomas">(*) Sintomas:</label><div class="input-group margin-bottom-sm"><span class="input-group-addon"><i class="fa fa-user"></i></span>
-                                                    <select name="idsintomas"  class="select" multiple="multiple" id="idsintomas" data-live-search="true">
+                                                    <select name="idsintomas"  class="select" multiple="multiple" id="idsintomas" data-live-search="true" identificador="{{ $sig->idsignos_vitales }}>
                                                         <option value="">--- Elige los síntomas ---</option>
                                                             @foreach ($sintomas as $key => $value)
                                                                 <option value="{{ $key }}">{{ $value }}</option>
@@ -65,7 +65,7 @@ IMC: {{$sig->IMC}}
                                         <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-md-12">
                                             <div class="form-group">
                                                 <label for="idenfermedad">(*) Enfermedad:</label><div class="input-group margin-bottom-sm"><span class="input-group-addon"><i class="fa fa-user"></i></span>
-                                                    <select name="idenfermedad"  id="idenfermedad" class="select">
+                                                    <select name="idenfermedad"  id="idenfermedad" class="select" identificador="{{ $sig->idsignos_vitales }}">
                                                          <option value=""></option>
                                                        
                                                     </select>
@@ -114,8 +114,9 @@ IMC: {{$sig->IMC}}
 
 
 <script> 
-    
+    let identificador = -1;
     $('body').on('shown.bs.modal', '.modal', function () {
+        identificador = jQuery(this).attr( "identificador" )
         $(this).find('select').each(function () {
             var dropdownParent = $(document.body);
             if ($(this).parents('.modal.in:first').length !== 0)
@@ -132,24 +133,32 @@ IMC: {{$sig->IMC}}
     jQuery(document).ready(function (){
         jQuery('select[name="idsintomas"]').on('change',function(){
             var sintomasID = jQuery(this).val();
-
+            let selector = 'select[name="idenfermedad"][identificador="'+identificador+'"]'
                 if(sintomasID){
                     jQuery.ajax({
                         url : 'consulta_medica/getenfermedad/' +sintomasID,
                         type : "GET",
                         dataType : "json",
                         success:function(data){
-                            console.log(data);
-                            jQuery('select[name="idenfermedadd"]').empty();
-                            jQuery.each(data, function(key,value){
-                                // alert(value);
-                                // $('select[name="idenfermedadd"]').append('<option value="'+ key +'">'+ value +'</option>');
+                            // ELiminar la lista desplegable de las enfermedades
+                            jQuery(selector).empty();
+                            // Ordenar los datos recibidos según las probabilidades (de mayor a menor)
+                            data.sort((a, b) => {
+                                if (a.probabilidad > b.probabilidad)
+                                    return -1;
+                                if (a.probabilidad < b.probabilidad)
+                                    return 1;
+                                return 0;
+                            });
+                            data.forEach(({idenfermedad, enfermedad, probabilidad}) => {
+                                let formato = probabilidad + "% - " + enfermedad;
+                                $(selector).append($('<option>', {value:idenfermedad, text:formato})); // Crear <option> y agregarlos al select correspondiente
                             });
                         }
                     });
                 }
                 else{
-                    $('select[name="idenfermedad"]').empty();
+                    $(selector).empty();
                 }
         });
     });

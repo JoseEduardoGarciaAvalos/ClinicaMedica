@@ -75,7 +75,7 @@ class PacienteController extends Controller
     }
 
     public function store(PacienteFormRequest $request){
-        $paciente = new Paciente;
+
 
         $paciente = Paciente::where('nombre_p', '=', Input::get('nombre_p'))->get();
                 if(count($paciente) > 0)
@@ -83,6 +83,7 @@ class PacienteController extends Controller
                 echo "ya esta este dato";
                 }
                 else{
+                        $paciente = new Paciente;
                         $paciente->nombre_p = $request->get('nombre_p');
                         $paciente->apellido_p = $request->get('apellido_p');
                         $paciente->edad_p = $request->get('edad_p');
